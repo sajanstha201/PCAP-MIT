@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include<math.h>
 __global__ void convert(int *a,int *b,int *n){
     int idx=threadIdx.x+blockDim.x*blockIdx.x;
     if(idx<n){
