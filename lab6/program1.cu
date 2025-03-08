@@ -1,34 +1,48 @@
 #include<stdio.h>
 #include<cuda_runtime.h>
-__global__ void convert(int *a,int *b,int n){
-    int i=threadIdx.x+blockIdx.x*blockDim.x;
-    if(i<n){
-        int num=a[i];
-        result=0;
-        while(num!=0){
-            result=result*10+(int)(num%8);
-            num=(int)num/8;
+__global__ void conv(int *N,int *M,int *r,int n,int m){
+    int id=threadIdx.x+blockIdx.x*blockDim.x;
+    if(id<n){
+        int value=0;
+        int point=id-(int)(m/2);
+        for(int i=0;i<m;i++){
+            if(0<=point&&point<n){
+                value+=M[i]*N[point];
+            }
+            point++;
         }
-        b[i]=num;
+        r[id]=value;
     }
 }
 int main(){
-    int n;
     printf("Enter the number of element: ");
+    int n;
     scanf("%d",&n);
-    int h_a[n],h_b[n];
-    printf("Enter the elements: \n");
+    int N[n];
+    printf("Enter the elements: ");
     for(int i=0;i<n;i++)
-        scanf("%d",&h_a[i]);
-    int *d_a,*d_b;
-    cudaMalloc(&d_a,sizeof(int)*n);
-    cudaMalloc(&d_b ,sizeof(int)*n);
-    cudaMemcpy(d_a,h_a,sizeof(int)*n,cudaMemcpyHostToDevice);
-    convert<<<n,256>>>(d_a,d_b,n);
-    cudaMemcpy(h_b,d_b,sizeof(int)*n,cudaMemcpyDeviceToHost);
-    printf("The Octal Form are: \n")
+        scanf("%d",&N[i]);
+    printf("Entr the numbee of element for Mask; ");
+    int m;
+    scanf("%d",&m);
+    int M[m];
+    printf("Enter the elements for Mark: ");
+    for(int i=0;i<m;i++)
+        scanf("%d",&M[i]);
+    int *d_N,*d_M;
+    cudaMalloc(&d_N,sizeof(int)*n);
+    cudaMalloc(&d_M,sizeof(int)*m);
+    cudaMemcpy(d_N,N,sizeof(int)*n,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_M,M,sizeof(int)*m,cudaMemcpyHostToDevice);
+    int result[n];
+    int *d_result;
+    cudaMalloc(&d_result,sizeof(int)*n);
+    conv<<<n,256>>>(d_N,d_M,d_result,n,m);
+    cudaDeviceSynchronize();
+    cudaMemcpy(result,d_result,sizeof(int)*n,cudaMemcpyDeviceToHost);
+    printf("The result is :\n");
     for(int i=0;i<n;i++)
-        printf("%d ",d_b[i]);
-    cudaFree(d_a);
-    cudaFree(d_b);
+        printf("%d ",result[i]);
+    cudaFree(d_N);
+    cudaFree(d_M);
 }

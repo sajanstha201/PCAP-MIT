@@ -2,12 +2,13 @@
 #include<string.h>
 #include<cuda_runtime.h>
 __global__ void findPattern(char *str,char *pattern, int *count,int strLen,int patternLen){
-    int id=threadIdx.x+blockdim.x*blockIdx.x;
+    int id=threadIdx.x+blockDim.x*blockIdx.x;
     int k=0;
-    if(id<strLen-patternLen){
-        for(int i=id;i<pattenLen;i++,k++)
+    if(id<strLen-patternLen+1){
+        for(int i=id;i<id+patternLen-1;i++,k++){
             if(str[i]!=pattern[k])
                 return;
+        }
         atomicAdd(count,1);
     }
 }
@@ -23,13 +24,17 @@ int main(){
     char *d_str;
     int *d_count;
     char *d_pattern;
-    cudaMalloc(&d_str,sizeof(char)*strlen(str));
-    cudaMalloc(&d_pattern,sizeof(char)*strlen(pattern));
+    int strLen=strlen(str),patternLen=strlen(pattern);
+    cudaMalloc(&d_str,strLen);
+    cudaMalloc(&d_pattern,patternLen);
     cudaMalloc(&d_count,sizeof(int));
-    cudaMemcpy(d_str,str,sizeof(char)*strlen(str),cudaMemcpyHostToDevice);
-    cudaMemcpy(d_pattern,pattern,sizeof(char)*strlen(pattern),cudaMemcpyHostToDevice);
-    cudaMemcpy(d_count,count,sizeof(int),cudaMemcpyHostToDevice);
-    findPattern<<<strlen(str),256>>>(d_str,d_pattern,d_count,strlen(str),strlen(pattern));
-    cudaMemcpy(count,d_count,sizeof(int),cudaMemcpyDeviceToHost);
+    cudaMemcpy(d_str,str,strLen,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_pattern,pattern,patternLen,cudaMemcpyHostToDevice);
+    cudaMemcpy(d_count,&count,sizeof(int),cudaMemcpyHostToDevice);
+    printf("%d %d\n",strLen,patternLen);
+    findPattern<<<1,strLen>>>(d_str,d_pattern,d_count,strLen,patternLen);
+    cudaDeviceSynchronize();
+    cudaMemcpy(&count,d_count,sizeof(int),cudaMemcpyDeviceToHost);
+    
     printf("The number of count of %s words in %s sentence is %d\n",pattern,str,count);
-}   
+}
