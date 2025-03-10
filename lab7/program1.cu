@@ -35,6 +35,6 @@ int main(){
     findPattern<<<1,strLen>>>(d_str,d_pattern,d_count,strLen,patternLen);
     cudaDeviceSynchronize();
     cudaMemcpy(&count,d_count,sizeof(int),cudaMemcpyDeviceToHost);
-    
+
     printf("The number of count of %s words in %s sentence is %d\n",pattern,str,count);
 }
